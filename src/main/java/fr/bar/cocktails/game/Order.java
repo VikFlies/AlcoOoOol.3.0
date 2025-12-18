@@ -1,86 +1,101 @@
 package fr.bar.cocktails.game;
 
-/**
- * Classe représentant une commande de cocktail
- * Workflow : waiting → assigned → preparing → completed
- * ✅ Serveur gagne +5 XP en prenant la commande
- * ✅ Barman gagne +15 XP en complétant la commande
- */
 public class Order {
-    private static int idCounter = 0;
+    private static int nextId = 1;
     private int id;
     private Cocktail cocktail;
-    private String status; // "waiting", "assigned", "preparing", "completed"
-    private double waitTime;
-    private double customerSatisfaction;
-    private long createdTime;
-    private Employee assignedBarman; // Le barman qui prépare cette commande
-    private Employee assignedServeur; // Le serveur qui a pris la commande
+    private String status; // waiting, assigned, preparing, completed
+    private Employee assignedServeur;
+    private Employee assignedBarman;
+    private double satisfactionLevel;
+    private long orderStartTime; // Quand la commande a commencé (en millisecondes)
 
     public Order(Cocktail cocktail, double satisfaction) {
-        this.id = idCounter++;
+        this.id = nextId++;
         this.cocktail = cocktail;
         this.status = "waiting";
-        this.customerSatisfaction = satisfaction;
-        this.createdTime = System.currentTimeMillis();
-        this.waitTime = 0;
-        this.assignedBarman = null;
         this.assignedServeur = null;
+        this.assignedBarman = null;
+        this.satisfactionLevel = satisfaction;
+        this.orderStartTime = System.currentTimeMillis();
     }
 
-    /**
-     * Met à jour le temps d'attente
-     */
-    public void updateWaitTime() {
-        waitTime = (System.currentTimeMillis() - createdTime) / 1000.0;
+    public int getId() {
+        return id;
     }
 
-    /**
-     * Assigne un serveur à cette commande
-     * ✅ Le serveur gagne +5 XP
-     */
+    public Cocktail getCocktail() {
+        return cocktail;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Employee getAssignedServeur() {
+        return assignedServeur;
+    }
+
     public void assignServeur(Employee serveur) {
         this.assignedServeur = serveur;
-        this.status = "assigned";
-        if (this.assignedServeur != null) {
-            this.assignedServeur.addExperience(5); // ← SERVEUR GAGNE +5 XP
-        }
     }
 
-    /**
-     * Assigne un barman à cette commande pour la préparer
-     */
+    public Employee getAssignedBarman() {
+        return assignedBarman;
+    }
+
     public void assignBarman(Employee barman) {
         this.assignedBarman = barman;
-        this.status = "preparing";
-    }
-
-    /**
-     * Marque la commande comme complétée
-     * ✅ Le barman gagne +15 XP
-     */
-    public void complete() {
-        this.status = "completed";
-        if (this.assignedBarman != null) {
-            this.assignedBarman.addExperience(15); // ← BARMAN GAGNE +15 XP
-        }
-    }
-
-    // ==================== GETTERS ====================
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public Cocktail getCocktail() { return cocktail; }
-    public double getWaitTime() { updateWaitTime(); return waitTime; }
-    public double getCustomerSatisfaction() { return customerSatisfaction; }
-    public int getId() { return id; }
-    public Employee getAssignedBarman() { return assignedBarman; }
-    public Employee getAssignedServeur() { return assignedServeur; }
-
-    public String getBarmanName() {
-        return assignedBarman != null ? assignedBarman.getName() : "En attente...";
     }
 
     public String getServeurName() {
-        return assignedServeur != null ? assignedServeur.getName() : "Non assigné";
+        return assignedServeur != null ? assignedServeur.getName() : "Personne";
+    }
+
+    public String getBarmanName() {
+        return assignedBarman != null ? assignedBarman.getName() : "Personne";
+    }
+
+    public double getSatisfactionLevel() {
+        return satisfactionLevel;
+    }
+
+    /**
+     * Définit l'heure de début de la commande
+     */
+    public void setOrderStartTime(long time) {
+        this.orderStartTime = time;
+    }
+
+    /**
+     * Obtient le temps d'attente en secondes
+     * Le temps d'attente baisse en temps réel une fois pris en charge
+     */
+    public double getWaitTime() {
+        long currentTime = System.currentTimeMillis();
+        long timeElapsed = currentTime - orderStartTime;
+        return timeElapsed / 1000.0; // Convertir en secondes
+    }
+
+    /**
+     * Complète la commande
+     */
+    public void complete() {
+        this.status = "completed";
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "id=" + id +
+                ", cocktail=" + cocktail.getName() +
+                ", status='" + status + '\'' +
+                ", serveur=" + getServeurName() +
+                ", barman=" + getBarmanName() +
+                '}';
     }
 }

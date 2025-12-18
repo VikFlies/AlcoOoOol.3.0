@@ -22,12 +22,13 @@ public class GameUI {
     private final Label waitingCount;
     private final Label preparingCount;
     private final Label completedCount;
+    private Button startButton;
 
     public GameUI(Game game, GameEngine engine) {
         this.game = game;
         this.engine = engine;
         this.root = new VBox();
-        this.moneyLabel = new Label("$1000");
+        this.moneyLabel = new Label("$2000");
         this.satisfactionLabel = new Label("100%");
         this.waveRevenueLabel = new Label("$0");
         this.waveNumberLabel = new Label("Vague #1");
@@ -39,6 +40,7 @@ public class GameUI {
         this.completedCount = new Label("0");
 
         initialize();
+        updateUI();
     }
 
     private void initialize() {
@@ -208,24 +210,34 @@ public class GameUI {
         waveInfo.setSpacing(8);
         waveNumberLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
         waveNumberLabel.setStyle("-fx-text-fill: #ff6b5b;");
-        Label waveLabel = new Label("Complétez les commandes et gagnez de l'argent");
+        Label waveLabel = new Label("Les commandes se traitent automatiquement selon la rapidité de vos employés");
         waveLabel.setStyle("-fx-text-fill: #999; -fx-font-size: 13;");
         waveInfo.getChildren().addAll(waveNumberLabel, waveLabel);
 
-        Button processButton = new Button("⚡ TRAITER COMMANDES (10s)");
-        processButton.setStyle("-fx-font-size: 13; -fx-padding: 15 25; -fx-background-color: #2d5f7d; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: hand;");
-        processButton.setPrefWidth(200);
-        processButton.setOnAction(e -> engine.processWaveWithTimer());
+        startButton = new Button("▶️ DÉMARRER VAGUE");
+        startButton.setStyle("-fx-font-size: 13; -fx-padding: 15 25; -fx-background-color: #52b788; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: hand;");
+        startButton.setPrefWidth(200);
+        startButton.setOnAction(e -> {
+            engine.startWave();
+            startButton.setDisable(true);
+            startButton.setStyle("-fx-font-size: 13; -fx-padding: 15 25; -fx-background-color: #999; -fx-text-fill: #555; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: default;");
+            updateUI();
+        });
 
-        Button endButton = new Button("→ TERMINER VAGUE");
+        Button endButton = new Button("⏹️ TERMINER VAGUE");
         endButton.setStyle("-fx-font-size: 13; -fx-padding: 15 25; -fx-background-color: #f4a261; -fx-text-fill: #1a1f26; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: hand;");
         endButton.setPrefWidth(180);
-        endButton.setOnAction(e -> engine.endWave());
+        endButton.setOnAction(e -> {
+            engine.endWave();
+            startButton.setDisable(false);
+            startButton.setStyle("-fx-font-size: 13; -fx-padding: 15 25; -fx-background-color: #52b788; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: hand;");
+            updateUI();
+        });
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        box.getChildren().addAll(waveInfo, spacer, processButton, endButton);
+        box.getChildren().addAll(waveInfo, spacer, startButton, endButton);
         return box;
     }
 
@@ -270,11 +282,12 @@ public class GameUI {
         Button barmanBtn = new Button("🍸 BARMAN ($200)");
         barmanBtn.setStyle("-fx-padding: 15; -fx-font-size: 13; -fx-background-color: #2d5f7d; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: hand;");
         barmanBtn.setMaxWidth(Double.MAX_VALUE);
-        Label barmanDesc = new Label("Prépare rapidement les cocktails");
+        Label barmanDesc = new Label("Prépare rapidement les cocktails | Vitesse: 1.5x");
         barmanDesc.setStyle("-fx-text-fill: #999; -fx-font-size: 11;");
         barmanBtn.setOnAction(e -> {
             engine.hireEmployee("barman");
             dialog.close();
+            updateUI();
         });
         VBox barmanBox = new VBox(barmanBtn, barmanDesc);
         barmanBox.setSpacing(5);
@@ -282,11 +295,12 @@ public class GameUI {
         Button serveurBtn = new Button("🧑‍💼 SERVEUR ($150)");
         serveurBtn.setStyle("-fx-padding: 15; -fx-font-size: 13; -fx-background-color: #52b788; -fx-text-fill: #1a1f26; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: hand;");
         serveurBtn.setMaxWidth(Double.MAX_VALUE);
-        Label serveurDesc = new Label("Gère les clients et les commandes");
+        Label serveurDesc = new Label("Gère les clients et les commandes | Vitesse: 1.2x");
         serveurDesc.setStyle("-fx-text-fill: #999; -fx-font-size: 11;");
         serveurBtn.setOnAction(e -> {
             engine.hireEmployee("serveur");
             dialog.close();
+            updateUI();
         });
         VBox serveurBox = new VBox(serveurBtn, serveurDesc);
         serveurBox.setSpacing(5);
@@ -344,6 +358,7 @@ public class GameUI {
             btn10.setOnAction(e -> {
                 engine.buyStock(ing.getName(), 10);
                 dialog.close();
+                updateUI();
             });
 
             Button btn25 = new Button("+25");
@@ -351,6 +366,7 @@ public class GameUI {
             btn25.setOnAction(e -> {
                 engine.buyStock(ing.getName(), 25);
                 dialog.close();
+                updateUI();
             });
 
             Region spacer = new Region();
@@ -486,6 +502,10 @@ public class GameUI {
                     borderColor = "#f4a261";
                     statusEmoji = "⚙️";
                     statusText = "EN PRÉPARATION";
+                } else if (order.getStatus().equals("assigned")) {
+                    borderColor = "#2d5f7d";
+                    statusEmoji = "📝";
+                    statusText = "ASSIGNÉE";
                 } else {
                     borderColor = "#ff6b5b";
                     statusEmoji = "📥";
@@ -497,10 +517,16 @@ public class GameUI {
                 Label cocktailLabel = new Label("🍹 " + order.getCocktail().getName());
                 cocktailLabel.setStyle("-fx-text-fill: #e8e8e8; -fx-font-weight: bold; -fx-font-size: 12;");
 
-                Label timeLabel = new Label(String.format("%s Attente: %.1fs", statusEmoji, order.getWaitTime()));
+                Label workflowLabel = new Label(String.format("%s %s | Serveur: %s | Barman: %s",
+                        statusEmoji, statusText,
+                        order.getServeurName(),
+                        order.getBarmanName()));
+                workflowLabel.setStyle("-fx-text-fill: #aaa; -fx-font-size: 10;");
+
+                Label timeLabel = new Label(String.format("⏱️ Attente: %.1fs", order.getWaitTime()));
                 timeLabel.setStyle("-fx-text-fill: #aaa; -fx-font-size: 11;");
 
-                orderBox.getChildren().addAll(cocktailLabel, timeLabel);
+                orderBox.getChildren().addAll(cocktailLabel, workflowLabel, timeLabel);
                 orderQueue.getChildren().add(orderBox);
             }
         }
@@ -567,6 +593,7 @@ public class GameUI {
             upgradeBtn.setOnAction(e -> {
                 engine.upgradeEmployee(emp.getId(), stats[index]);
                 dialog.close();
+                updateUI();
             });
 
             Region spacer = new Region();

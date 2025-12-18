@@ -1,8 +1,6 @@
 package fr.bar.cocktails.engine;
 
-import javafx.animation.Timeline;
-import javafx.animation.KeyFrame;
-import javafx.util.Duration;
+import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import fr.bar.cocktails.game.Game;
 import fr.bar.cocktails.view.GameUI;
@@ -10,12 +8,13 @@ import fr.bar.cocktails.view.GameUI;
 public class GameEngine {
     private final Game game;
     private final GameUI gameUI;
-    private Timeline waveTimer;
-    private boolean isProcessing = false;
+    private AnimationTimer gameLoop;
+    private boolean isWaveActive = false;
 
     public GameEngine(Game game) {
         this.game = game;
         this.gameUI = new GameUI(game, this);
+        initializeGameLoop();
     }
 
     public GameUI getGameUI() {
@@ -23,34 +22,49 @@ public class GameEngine {
     }
 
     /**
-     * Traite la vague avec animation de 10 secondes
+     * Initialise la boucle de jeu qui traite les commandes en temps réel
      */
-    public void processWaveWithTimer() {
-        if (isProcessing) return;
-        isProcessing = true;
+    private void initializeGameLoop() {
+        gameLoop = new AnimationTimer() {
+            private long lastProcessTime = 0;
+            private static final long PROCESS_INTERVAL = 100; // Vérifier tous les 100ms
 
-        waveTimer = new Timeline(new KeyFrame(
-                Duration.seconds(10),
-                event -> {
-                    game.processWave();
-                    updateUI();
-                    isProcessing = false;
+            @Override
+            public void handle(long now) {
+                if (isWaveActive) {
+                    // Traiter les commandes chaque 100ms
+                    if (now - lastProcessTime >= PROCESS_INTERVAL * 1_000_000) {
+                        game.processOrdersAutomatically();
+                        updateUI();
+                        lastProcessTime = now;
+                    }
                 }
-        ));
-        waveTimer.setCycleCount(1);
-        waveTimer.play();
+            }
+        };
+        gameLoop.start();
+    }
+
+    /**
+     * Démarre une vague (les commandes se traitent automatiquement)
+     */
+    public void startWave() {
+        if (!isWaveActive) {
+            isWaveActive = true;
+            System.out.println("\n🌊 VAGUE #" + game.getWave() + " COMMENCÉE!");
+            updateUI();
+        }
     }
 
     /**
      * Termine la vague actuelle
      */
     public void endWave() {
-        if (waveTimer != null) {
-            waveTimer.stop();
+        if (isWaveActive) {
+            isWaveActive = false;
+            game.endWave();
+            System.out.println("\n✅ Vague terminée!");
+            updateUI();
         }
-        game.endWave();
-        updateUI();
-        isProcessing = false;
     }
 
     /**
@@ -86,5 +100,9 @@ public class GameEngine {
 
     public Game getGame() {
         return game;
+    }
+
+    public boolean isWaveActive() {
+        return isWaveActive;
     }
 }
