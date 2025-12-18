@@ -19,6 +19,7 @@ public class GameUI {
     private final VBox employeesList;
     private final VBox stockList;
     private final VBox orderQueue;
+    private final VBox logsPanel;
     private final Label waitingCount;
     private final Label preparingCount;
     private final Label completedCount;
@@ -35,6 +36,7 @@ public class GameUI {
         this.employeesList = new VBox();
         this.stockList = new VBox();
         this.orderQueue = new VBox();
+        this.logsPanel = new VBox();
         this.waitingCount = new Label("0");
         this.preparingCount = new Label("0");
         this.completedCount = new Label("0");
@@ -103,11 +105,17 @@ public class GameUI {
         grid.setStyle("-fx-background-color: #1a1f26; -fx-padding: 20;");
         grid.setHgap(20);
         grid.setVgap(20);
-        grid.setPrefWidth(1360);
+        grid.setPrefWidth(1400);
 
-        ColumnConstraints col = new ColumnConstraints();
-        col.setPercentWidth(33.33);
-        grid.getColumnConstraints().addAll(col, col, col);
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setPercentWidth(25);
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setPercentWidth(25);
+        ColumnConstraints col3 = new ColumnConstraints();
+        col3.setPercentWidth(25);
+        ColumnConstraints col4 = new ColumnConstraints();
+        col4.setPercentWidth(25);
+        grid.getColumnConstraints().addAll(col1, col2, col3, col4);
 
         VBox employeePanel = createPanel("👥 EMPLOYÉS", employeesList, createHireButton());
         grid.add(employeePanel, 0, 0);
@@ -118,8 +126,11 @@ public class GameUI {
         VBox ordersPanel = createOrdersPanel();
         grid.add(ordersPanel, 2, 0);
 
+        VBox logsPanel2 = createLogsPanel();
+        grid.add(logsPanel2, 3, 0);
+
         HBox waveControl = createWaveControl();
-        GridPane.setColumnSpan(waveControl, 3);
+        GridPane.setColumnSpan(waveControl, 4);
         grid.add(waveControl, 0, 1);
 
         return grid;
@@ -182,6 +193,38 @@ public class GameUI {
         );
 
         panel.getChildren().addAll(titleLabel, sep, scroll, statsBar);
+        return panel;
+    }
+
+    private VBox createLogsPanel() {
+        VBox panel = new VBox();
+        panel.setStyle("-fx-background-color: rgba(30, 40, 55, 0.9); -fx-border-color: #3d5a7a; -fx-border-width: 1; -fx-border-radius: 10; -fx-padding: 20;");
+        panel.setSpacing(15);
+        panel.setPrefHeight(450);
+
+        Label titleLabel = new Label("📊 ÉVÉNEMENTS");
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        titleLabel.setStyle("-fx-text-fill: #ff6b5b; -fx-font-weight: bold;");
+
+        Separator sep = new Separator();
+        sep.setStyle("-fx-border-color: #3d5a7a;");
+
+        logsPanel.setStyle("-fx-spacing: 8;");
+
+        ScrollPane scroll = new ScrollPane(logsPanel);
+        scroll.setStyle("-fx-control-inner-background: rgba(30, 40, 55, 0.9); -fx-background-color: rgba(30, 40, 55, 0.9); -fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
+        scroll.setFitToWidth(true);
+        scroll.setPrefHeight(350);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+        scroll.vvalueProperty().bind(logsPanel.heightProperty());
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+
+        Button clearBtn = new Button("🗑️ EFFACER LOGS");
+        clearBtn.setStyle("-fx-font-size: 11; -fx-padding: 8 12; -fx-background-color: #555; -fx-text-fill: white; -fx-border-radius: 4; -fx-cursor: hand; -fx-font-weight: bold;");
+        clearBtn.setMaxWidth(Double.MAX_VALUE);
+        clearBtn.setOnAction(e -> OrderLog.getInstance().clear());
+
+        panel.getChildren().addAll(titleLabel, sep, scroll, clearBtn);
         return panel;
     }
 
@@ -401,6 +444,7 @@ public class GameUI {
         updateEmployeesList();
         updateStockList();
         updateOrdersList();
+        updateLogs();
     }
 
     private void updateEmployeesList() {
@@ -484,9 +528,15 @@ public class GameUI {
         int waiting = 0, preparing = 0, completed = 0;
 
         for (Order order : game.getOrders()) {
-            if (order.getStatus().equals("waiting")) waiting++;
-            else if (order.getStatus().equals("preparing")) preparing++;
-            else if (order.getStatus().equals("completed")) completed++;
+            if (order.getStatus().equals("waiting")) {
+                waiting++;
+            } else if (order.getStatus().equals("assigned")) {
+                // Les "assigned" ne sont pas comptés
+            } else if (order.getStatus().equals("preparing")) {
+                preparing++;
+            } else if (order.getStatus().equals("completed")) {
+                completed++;
+            }
 
             if (orderQueue.getChildren().size() < 10) {
                 VBox orderBox = new VBox();
@@ -494,22 +544,28 @@ public class GameUI {
                 String borderColor;
                 String statusEmoji;
                 String statusText;
+                String timeInfo;
+
                 if (order.getStatus().equals("completed")) {
                     borderColor = "#52b788";
                     statusEmoji = "✅";
                     statusText = "COMPLÉTÉE";
+                    timeInfo = "⏱️ Temps total: " + String.format("%.1f", order.getWaitTime()) + "s";
                 } else if (order.getStatus().equals("preparing")) {
                     borderColor = "#f4a261";
                     statusEmoji = "⚙️";
                     statusText = "EN PRÉPARATION";
+                    timeInfo = "⏱️ Barman: " + String.format("%.1f", order.getBarmanTimeRemaining()) + "s restants";
                 } else if (order.getStatus().equals("assigned")) {
                     borderColor = "#2d5f7d";
                     statusEmoji = "📝";
-                    statusText = "ASSIGNÉE";
+                    statusText = "REMISE AU BARMAN";
+                    timeInfo = "⏱️ En attente du barman";
                 } else {
                     borderColor = "#ff6b5b";
                     statusEmoji = "📥";
                     statusText = "EN ATTENTE";
+                    timeInfo = "⏱️ Attente: " + String.format("%.1f", order.getWaitTime()) + "s";
                 }
 
                 orderBox.setStyle("-fx-background-color: rgba(50, 70, 90, 0.8); -fx-padding: 12; -fx-border-radius: 6; -fx-border-width: 0 0 0 3; -fx-border-color: " + borderColor + "; -fx-spacing: 6;");
@@ -523,7 +579,7 @@ public class GameUI {
                         order.getBarmanName()));
                 workflowLabel.setStyle("-fx-text-fill: #aaa; -fx-font-size: 10;");
 
-                Label timeLabel = new Label(String.format("⏱️ Attente: %.1fs", order.getWaitTime()));
+                Label timeLabel = new Label(timeInfo);
                 timeLabel.setStyle("-fx-text-fill: #aaa; -fx-font-size: 11;");
 
                 orderBox.getChildren().addAll(cocktailLabel, workflowLabel, timeLabel);
@@ -540,6 +596,49 @@ public class GameUI {
         waitingCount.setText(waiting + "");
         preparingCount.setText(preparing + "");
         completedCount.setText(completed + "");
+    }
+
+    private void updateLogs() {
+        logsPanel.getChildren().clear();
+
+        for (OrderLog.LogEntry log : OrderLog.getInstance().getLogs()) {
+            HBox logBox = new HBox();
+
+            String bgColor;
+            switch (log.type) {
+                case "order":
+                    bgColor = "rgba(45, 95, 125, 0.8)";
+                    break;
+                case "serveur":
+                    bgColor = "rgba(45, 140, 120, 0.8)";
+                    break;
+                case "barman":
+                    bgColor = "rgba(244, 162, 97, 0.8)";
+                    break;
+                case "completed":
+                    bgColor = "rgba(82, 183, 136, 0.8)";
+                    break;
+                case "error":
+                    bgColor = "rgba(255, 107, 91, 0.8)";
+                    break;
+                default:
+                    bgColor = "rgba(50, 70, 90, 0.8)";
+            }
+
+            logBox.setStyle("-fx-background-color: " + bgColor + "; -fx-padding: 8; -fx-border-radius: 4; -fx-spacing: 8;");
+            logBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+            Label timeLabel = new Label(log.getFormattedTime());
+            timeLabel.setStyle("-fx-text-fill: #999; -fx-font-size: 10; -fx-min-width: 45;");
+
+            Label messageLabel = new Label(log.message);
+            messageLabel.setStyle("-fx-text-fill: #e8e8e8; -fx-font-size: 11; -fx-wrap-text: true;");
+            messageLabel.setWrapText(true);
+            HBox.setHgrow(messageLabel, Priority.ALWAYS);
+
+            logBox.getChildren().addAll(timeLabel, messageLabel);
+            logsPanel.getChildren().add(logBox);
+        }
     }
 
     private void showUpgradeDialog(Employee emp) {
