@@ -114,9 +114,75 @@ public class Game {
     }
 
     /**
-     * ⚠️ CORRIGÉ - TRAITE LES COMMANDES AUTOMATIQUEMENT
-     * Cette méthode est appelée par GameEngine toutes les 100ms
+     * Améliorer un employé
+     * @param empId ID de l'employé
+     * @param stat Type d'amélioration ("speed", "quality", "salary")
      */
+    public void upgradeEmployee(String empId, String stat) {
+        for (Employee emp : employees) {
+            if (emp.getId().equals(empId)) {
+                // Trouver l'amélioration correspondante
+                List<EmployeeUpgrade> upgrades = emp.getAvailableUpgrades();
+
+                for (EmployeeUpgrade upgrade : upgrades) {
+                    if (upgrade.getStat().equalsIgnoreCase(stat)) {
+                        double cost = upgrade.getPrice();
+
+                        if (money >= cost) {
+                            // Appliquer l'amélioration
+                            money -= cost;
+                            upgrade.apply();
+
+                            System.out.println("⬆️ " + emp.getName() +
+                                    " amélioré en " + stat.toUpperCase() +
+                                    " | -$" + (int)cost);
+
+                            // Si amélioration de salaire, augmenter aussi
+                            if (stat.equalsIgnoreCase("salary")) {
+                                System.out.println("💸 Nouveau salaire: $" + (int)emp.getSalary());
+                            }
+
+                            return;
+                        } else {
+                            System.out.println("❌ Fonds insuffisants pour améliorer " +
+                                    emp.getName() + " (" + stat + ")");
+                            System.out.println("   Coût: $" + (int)cost +
+                                    " | Argent: $" + (int)money);
+                            return;
+                        }
+                    }
+                }
+
+                System.out.println("❌ Amélioration " + stat + " non trouvée");
+                return;
+            }
+        }
+
+        System.out.println("❌ Employé non trouvé: " + empId);
+    }
+
+    /**
+     * Afficher les améliorations disponibles pour un employé
+     */
+    public void displayEmployeeUpgrades(String empId) {
+        for (Employee emp : employees) {
+            if (emp.getId().equals(empId)) {
+                System.out.println("\n=== AMÉLIORATIONS DISPONIBLES - " + emp.getName() + " ===");
+                System.out.println("Stats actuelles: Speed=" + emp.getSpeed() +
+                        " | Quality=" + emp.getQuality() +
+                        " | Salary=$" + (int)emp.getSalary());
+
+                for (EmployeeUpgrade upgrade : emp.getAvailableUpgrades()) {
+                    double improvement = upgrade.getImprovement() * 100;
+                    System.out.println("  ✓ " + upgrade.getStat().toUpperCase() +
+                            " (+$" + improvement + "%) - Coût: $" + (int)upgrade.getPrice());
+                }
+                return;
+            }
+        }
+    }
+
+
     public void processOrdersAutomatically() {
         if (!isWaveActive || orders.isEmpty()) {
             return;
@@ -128,6 +194,10 @@ public class Game {
                 .toList();
 
         for (Order order : waitingOrders) {
+            if (!hasEnoughStockForCocktail(order.getCocktail())) {
+                order.setStatus("failed");
+                continue;
+            }
             if (!employees.isEmpty()) {
                 // Trouver un serveur
                 List<Employee> serveurs = employees.stream()
@@ -195,7 +265,11 @@ public class Game {
                 double totalTime = preparationTime + 2.0;
 
                 if (order.getWaitTime() >= totalTime) {
-                    completeOrder(order);
+                    if (useIngredientsForCocktail(order.getCocktail())) {
+                        completeOrder(order);
+                    } else {
+                        order.setStatus("failed");
+                    }
                     barmanCurrentOrder.remove(barman.getId());  // ← Libérer le barman
                     System.out.println("✅ Barman " + barman.getName() + " est maintenant libre");
                 }
@@ -226,6 +300,20 @@ public class Game {
         System.out.println("✅ Commande complétée: " + order.getCocktail().getName() +
                 " | Gain: $" + (int)revenue);
     }
+
+    private void completeFailedOrder(Order order) {
+        // Perte d'argent (remboursement au client)
+        double loss = order.getCocktail().getPrice() * 0.5;
+        money -= loss;
+        waveRevenue -= loss;
+
+        // Perte de satisfaction
+        staffSatisfaction = Math.max(0, staffSatisfaction - 15);
+
+        System.out.println("😞 Perte due à commande échouée: -$" + (int)loss);
+        System.out.println("😞 Satisfaction client: -15");
+    }
+
 
     // ==================== GESTION DES VAGUES ====================
     public void startWave() {
@@ -297,23 +385,6 @@ public class Game {
         }
     }
 
-    public void upgradeEmployee(String empId, String stat) {
-        for (Employee emp : employees) {
-            if (emp.getId().equals(empId)) {
-                double upgradeCost = emp.getUpgradeCost(stat);
-
-                if (money >= upgradeCost) {
-                    money -= upgradeCost;
-                    emp.upgrade(stat);
-                    System.out.println("⬆️ " + emp.getName() + " amélioré en " + stat);
-                } else {
-                    System.out.println("❌ Fonds insuffisants");
-                }
-                return;
-            }
-        }
-    }
-
     // ==================== GESTION DU STOCK ====================
     public void buyStock(String ingredientName, int quantity) {
         for (Ingredient ing : ingredients) {
@@ -331,6 +402,55 @@ public class Game {
             }
         }
     }
+    /**
+     * Vérifier si on a suffisant stock pour préparer un cocktail
+     */
+    private boolean hasEnoughStockForCocktail(Cocktail cocktail) {
+        for (String ingredientName : cocktail.getRecipe()) {
+            Ingredient ing = findIngredient(ingredientName);
+            if (ing == null || ing.getQuantity() < 1) {
+                return false;  // Stock insuffisant ou ingrédient manquant
+            }
+        }
+        return true;  // Suffisant stock
+    }
+
+    /**
+     * Chercher un ingrédient par nom
+     */
+    private Ingredient findIngredient(String name) {
+        for (Ingredient ing : ingredients) {
+            if (ing.getName().equalsIgnoreCase(name)) {
+                return ing;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Utiliser les ingrédients pour préparer un cocktail
+     * @return true si succès, false si stock insuffisant
+     */
+    private boolean useIngredientsForCocktail(Cocktail cocktail) {
+        // D'abord, vérifier que tout est disponible
+        for (String ingredientName : cocktail.getRecipe()) {
+            Ingredient ing = findIngredient(ingredientName);
+            if (ing == null || ing.getQuantity() < 1) {
+                System.out.println("❌ Stock insuffisant: " + ingredientName);
+                return false;
+            }
+        }
+
+        // Si tout est ok, utiliser les ingrédients
+        for (String ingredientName : cocktail.getRecipe()) {
+            Ingredient ing = findIngredient(ingredientName);
+            ing.useIngredient();
+            System.out.println("📉 " + ingredientName + " utilisé (reste: " + ing.getQuantity() + ")");
+        }
+
+        return true;
+    }
+
 
     // ==================== GETTERS ====================
     public double getMoney() { return money; }

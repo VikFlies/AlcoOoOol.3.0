@@ -124,14 +124,6 @@ public class GameEngine {
     }
 
     /**
-     * Améliore un employé
-     */
-    public void upgradeEmployee(String empId, String stat) {
-        game.upgradeEmployee(empId, stat);
-        updateUI();
-    }
-
-    /**
      * ← CRITIQUE : Met à jour l'interface
      * Doit être appelée depuis le thread JavaFX
      */

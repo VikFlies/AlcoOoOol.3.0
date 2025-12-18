@@ -4,7 +4,7 @@ package fr.bar.cocktails.game;
  * Classe abstraite représentant un cocktail
  * Parent de AlcoholicCocktail et SoftCocktail
  */
-public abstract class Cocktail {
+public abstract class Cocktail implements Payable{
     protected String name;
     protected double price;
     protected String[] recipe;
@@ -40,6 +40,7 @@ public abstract class Cocktail {
         return name;
     }
 
+    @Override
     public double getPrice() {
         return price;
     }
@@ -55,5 +56,13 @@ public abstract class Cocktail {
     @Override
     public String toString() {
         return name + " (" + getType() + ") - $" + price;
+    }
+    @Override
+    public String getPriceDescription() {
+        return getName() + " " + getType() + " - $" + String.format("%.2f", price);
+    }
+    @Override
+    public double calculateFinalPrice() {
+        return price * getQualityModifier();
     }
 }

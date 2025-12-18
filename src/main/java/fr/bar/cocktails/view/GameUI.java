@@ -497,15 +497,15 @@ public class GameUI {
             Label nameLabel = new Label(ing.getName());
             nameLabel.setStyle("-fx-text-fill: #e8e8e8; -fx-font-weight: bold; -fx-min-width: 70;");
 
-            Label stockLabel = new Label((int) ing.getStock() + "");
+            Label stockLabel = new Label((int) ing.getQuantity() + "");
             stockLabel.setStyle("-fx-text-fill: #52b788; -fx-font-weight: bold; -fx-min-width: 40; -fx-text-alignment: right; -fx-font-size: 13;");
 
             String statusStyle;
             String statusEmoji;
-            if (ing.getStock() < 20) {
+            if (ing.getQuantity() < 20) {
                 statusStyle = "-fx-text-fill: #ff6b5b;";
                 statusEmoji = "🔴";
-            } else if (ing.getStock() < 40) {
+            } else if (ing.getQuantity() < 40) {
                 statusStyle = "-fx-text-fill: #f4a261;";
                 statusEmoji = "🟠";
             } else {
@@ -665,10 +665,10 @@ public class GameUI {
         sep.setStyle("-fx-border-color: #3d5a7a;");
         content.getChildren().add(sep);
 
-        String[] stats = {"speed", "quality", "experience"};
-        String[] labels = {"⚡ Vitesse", "⭐ Qualité", "📈 Expérience"};
-        String[] descriptions = {"Prépare plus vite", "Meilleure qualité", "Augmente l'expérience"};
-        String[] colors = {"#2d5f7d", "#52b788", "#f4a261"};
+        String[] stats = {"speed", "quality", "salary"};
+        String[] labels = {"Vitesse", "Qualité", "Salaire"};
+        String[] descriptions = {"Prépare plus vite (+15%)", "Meilleure qualité (+15%)", "Augmente le salaire (+20%)"};
+        String[] colors = {"2d5f7d", "52b788", "f4a261"};
 
         for (int i = 0; i < stats.length; i++) {
             HBox itemBox = new HBox();
@@ -693,7 +693,7 @@ public class GameUI {
             upgradeBtn.setStyle("-fx-padding: 8 16; -fx-font-size: 11; -fx-background-color: " + colors[i] + "; -fx-text-fill: white; -fx-border-radius: 4; -fx-cursor: hand; -fx-font-weight: bold;");
             final int index = i;
             upgradeBtn.setOnAction(e -> {
-                engine.upgradeEmployee(emp.getId(), stats[index]);
+                game.upgradeEmployee(emp.getId(), stats[index]);
                 dialog.close();
                 updateUI();
             });
