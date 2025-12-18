@@ -3,312 +3,343 @@ package fr.bar.cocktails.game;
 import java.util.*;
 
 public class Game {
-    private double money = 2000;
-    private double staffSatisfaction = 100;
-    private int wave = 1;
-    private double waveRevenue = 0;
-    private int waveOrdersCompleted = 0;
-    private List<Employee> employees = new ArrayList<>();
-    private List<Ingredient> ingredients = new ArrayList<>();
-    private List<Order> orders = new ArrayList<>();
-    private List<Cocktail> cocktails = new ArrayList<>();
-    private Random random = new Random();
-    private double difficultyMultiplier = 1.0;
+    // ==================== ATTRIBUTS ====================
+    private double money;
+    private int wave;
+    private double staffSatisfaction;
+    private double waveRevenue;
+    private List<Employee> employees;
+    private List<Ingredient> ingredients;
+    private List<Cocktail> cocktails;
+    private List<Order> orders;
+    private boolean isWaveActive;
+    private Map<String, Order> barmanCurrentOrder = new HashMap<>();
 
-    private Map<Integer, Long> orderStartTimes = new HashMap<>();
-    private Map<Integer, Boolean> orderAssignedToServeur = new HashMap<>();
-    private Map<Integer, Boolean> orderAssignedToBarman = new HashMap<>();
-    private Map<String, Integer> employeeCurrentOrder = new HashMap<>();
+    // ==================== CONSTANTES ====================
+    private static final String[] SERVEUR_NAMES = {"Alice", "Bob", "Charlie", "Diana", "Eva", "Frank"};
+    private static final String[] BARMAN_NAMES = {"Mike", "Sarah", "Tom", "Lisa", "Jean", "Marie"};
 
+    // ==================== CONSTRUCTEUR ====================
     public Game() {
+        this.money = 2000;
+        this.wave = 1;
+        this.staffSatisfaction = 100;
+        this.waveRevenue = 0;
+        this.employees = new ArrayList<>();
+        this.ingredients = new ArrayList<>();
+        this.cocktails = new ArrayList<>();
+        this.orders = new ArrayList<>();
+        this.isWaveActive = false;
+
         initializeIngredients();
         initializeCocktails();
-        generateInitialOrders();
+
+        System.out.println("✅ Game initialized");
     }
 
+    // ==================== INITIALISATION ====================
     private void initializeIngredients() {
-        ingredients.add(new Ingredient("Rhum", 2.5, 100));
-        ingredients.add(new Ingredient("Vodka", 3.0, 100));
-        ingredients.add(new Ingredient("Gin", 3.5, 100));
-        ingredients.add(new Ingredient("Jus Citron", 1.0, 150));
-        ingredients.add(new Ingredient("Sirop", 0.8, 150));
-        ingredients.add(new Ingredient("Soda", 0.5, 200));
-        ingredients.add(new Ingredient("Glaçons", 0.2, 300));
+        ingredients.add(new Ingredient("Rhum", 0.5, 50));
+        ingredients.add(new Ingredient("Vodka", 0.6, 50));
+        ingredients.add(new Ingredient("Tequila", 0.5, 50));
+        ingredients.add(new Ingredient("Rhum blanc", 0.5, 50));
+        ingredients.add(new Ingredient("Citron frais", 0.2, 80));
+        ingredients.add(new Ingredient("Sucre", 0.1, 100));
+        ingredients.add(new Ingredient("Glaçon", 0.1, 150));
+        ingredients.add(new Ingredient("Menthe", 0.1, 60));
+        ingredients.add(new Ingredient("Jus d'orange", 0.3, 100));
+        ingredients.add(new Ingredient("Sirop simple", 0.2, 80));
     }
 
     private void initializeCocktails() {
-        cocktails.add(new Cocktail("Mojito", 12.0, new String[]{"Rhum", "Jus Citron", "Sirop", "Soda"}));
-        cocktails.add(new Cocktail("Margarita", 14.0, new String[]{"Vodka", "Jus Citron", "Sirop"}));
-        cocktails.add(new Cocktail("Daiquiri", 13.0, new String[]{"Rhum", "Jus Citron", "Glaçons"}));
-        cocktails.add(new Cocktail("Gin Tonic", 11.0, new String[]{"Gin", "Soda", "Glaçons"}));
+        // ===== COCKTAILS ALCOOLISÉS =====
+        cocktails.add(new AlcoholicCocktail(
+                "Mojito",
+                new String[]{"Rhum blanc", "Citron frais", "Sucre", "Menthe", "Glaçon"},
+                20.0, 7.0, 15.0));  // Prix normal: 8.0$, temps: 5s, alcool: 15°
+
+        cocktails.add(new AlcoholicCocktail(
+                "Margarita",
+                new String[]{"Tequila", "Citron frais", "Sucre"},
+                15.0, 6.0, 14.0));
+
+        cocktails.add(new AlcoholicCocktail(
+                "Daiquiri",
+                new String[]{"Rhum", "Citron frais", "Sucre", "Glaçon"},
+                23.5, 6.5, 16.0));
+
+        cocktails.add(new AlcoholicCocktail(
+                "Cuba Libre",
+                new String[]{"Rhum", "Citron frais", "Jus d'orange", "Glaçon"},
+                25.0, 5.5, 12.0));
+
+        cocktails.add(new AlcoholicCocktail(
+                "Piña Colada",
+                new String[]{"Rhum blanc", "Jus d'orange", "Sucre", "Glaçon"},
+                22.0, 7.5, 17.0));
+
+        // ===== COCKTAILS SANS ALCOOL =====
+        cocktails.add(new SoftCocktail(
+                "Mojito Vierge",
+                new String[]{"Citron frais", "Sucre", "Menthe", "Glaçon", "Eau"},
+                18.0, 5.0, false));  // Prix: 5.0 * 0.8 = 4.0$, temps: 3.0 * 0.7 = 2.1s
+
+        cocktails.add(new SoftCocktail(
+                "Smoothie Tropical",
+                new String[]{"Mangue", "Ananas", "Noix de coco", "Glaçon"},
+                10.5, 4.5, false));
+
+        cocktails.add(new SoftCocktail(
+                "Jus de Fruits",
+                new String[]{"Orange", "Citron", "Fraise", "Glaçon"},
+                6.0, 4.0, false));
+
+        cocktails.add(new SoftCocktail(
+                "Ice Tea",
+                new String[]{"Thé", "Citron", "Sucre", "Glaçon"},
+                7.5, 4.0, true));  // true = avec caféine
     }
 
-    public void generateInitialOrders() {
-        int orderCount = (int) (3 + difficultyMultiplier * 2);
-        for (int i = 0; i < orderCount; i++) {
-            orders.add(generateRandomOrder());
+    // ==================== GESTION DES COMMANDES ====================
+    public void generateOrders(int count) {
+        Random rand = new Random();
+        for (int i = 0; i < count; i++) {
+            Cocktail cocktail = cocktails.get(rand.nextInt(cocktails.size()));
+            double satisfaction = 0.85 + rand.nextDouble() * 0.15;
+            Order order = new Order(cocktail, satisfaction);
+            orders.add(order);
+            System.out.println("📝 Nouvelle commande: " + cocktail.getName());
+        }
+        System.out.println("📥 Total: " + count + " commandes générées");
+    }
+
+    /**
+     * ⚠️ CORRIGÉ - TRAITE LES COMMANDES AUTOMATIQUEMENT
+     * Cette méthode est appelée par GameEngine toutes les 100ms
+     */
+    public void processOrdersAutomatically() {
+        if (!isWaveActive || orders.isEmpty()) {
+            return;
+        }
+
+        // ===== PHASE 1 : ASSIGNER LES COMMANDES EN ATTENTE =====
+        List<Order> waitingOrders = orders.stream()
+                .filter(o -> "waiting".equals(o.getStatus()))
+                .toList();
+
+        for (Order order : waitingOrders) {
+            if (!employees.isEmpty()) {
+                // Trouver un serveur
+                List<Employee> serveurs = employees.stream()
+                        .filter(e -> e instanceof Serveur)
+                        .toList();
+
+                // Trouver un barman
+                List<Employee> barmans = employees.stream()
+                        .filter(e -> e instanceof Barman)
+                        .toList();
+
+                if (!serveurs.isEmpty() && !barmans.isEmpty()) {
+                    Employee serveur = serveurs.get(new Random().nextInt(serveurs.size()));
+                    Employee barman = barmans.get(new Random().nextInt(barmans.size()));
+
+                    order.assignServeur(serveur);
+                    order.assignBarman(barman);
+                    order.setStatus("assigned");
+                    order.setOrderStartTime(System.currentTimeMillis());
+
+                    System.out.println("📝 Commande assignée: " + order.getCocktail().getName() +
+                            " → Serveur: " + serveur.getName() + ", Barman: " + barman.getName());
+                }
+            }
+        }
+
+        // ===== PHASE 2 : COMMANDES ASSIGNÉES → EN PRÉPARATION =====
+        List<Order> assignedOrders = orders.stream()
+                .filter(o -> "assigned".equals(o.getStatus()))
+                .toList();
+
+        // APRÈS (une seule commande par barman)
+        for (Order order : assignedOrders) {
+            Employee barman = order.getAssignedBarman();
+            if (barman != null) {
+                // Vérifier si ce barman est libre (pas de commande en cours)
+                Order currentOrder = barmanCurrentOrder.get(barman.getId());
+
+                // APRÈS (corrigé - les commandes vont à la bonne vitesse)
+                if (currentOrder == null) {
+                    double preparationTime = order.getCocktail().getPreparationTime() / barman.getSpeed();
+
+                    if (order.getWaitTime() >= preparationTime) {
+                        order.setStatus("preparing");
+                        order.resetOrderTime();  // ← RÉINITIALISER LE TIMER !
+                        barmanCurrentOrder.put(barman.getId(), order);
+                        System.out.println("⏱️ Barman " + barman.getName() + " commence: " +
+                                order.getCocktail().getName());
+                    }
+                }
+            }
+        }
+
+
+        // ===== PHASE 3 : COMMANDES EN PRÉPARATION → COMPLÉTÉES =====
+        List<Order> preparingOrders = orders.stream()
+                .filter(o -> "preparing".equals(o.getStatus()))
+                .toList();
+
+        // APRÈS
+        for (Order order : preparingOrders) {
+            Employee barman = order.getAssignedBarman();
+            if (barman != null) {
+                double preparationTime = order.getCocktail().getPreparationTime() / barman.getSpeed();
+                double totalTime = preparationTime + 2.0;
+
+                if (order.getWaitTime() >= totalTime) {
+                    completeOrder(order);
+                    barmanCurrentOrder.remove(barman.getId());  // ← Libérer le barman
+                    System.out.println("✅ Barman " + barman.getName() + " est maintenant libre");
+                }
+            }
         }
     }
 
-    public Order generateRandomOrder() {
-        Cocktail cocktail = cocktails.get(random.nextInt(cocktails.size()));
-        double satisfaction = 0.5 + random.nextDouble() * 0.5;
-        return new Order(cocktail, satisfaction);
+    private void completeOrder(Order order) {
+        order.complete();
+
+        double qualityModifier = order.getCocktail().getQualityModifier();
+        double revenue = order.getCocktail().getPrice() * order.getSatisfactionLevel() * qualityModifier;
+
+        money += revenue;
+        waveRevenue += revenue;
+
+        // ← EXPÉRIENCE DES EMPLOYÉS
+        if (order.getAssignedServeur() != null) {
+            order.getAssignedServeur().addExperience(5 * order.getSatisfactionLevel());
+        }
+        if (order.getAssignedBarman() != null) {
+            order.getAssignedBarman().addExperience(8 * order.getSatisfactionLevel());
+        }
+
+        // ← SATISFACTION DES CLIENTS
+        staffSatisfaction = Math.min(100, staffSatisfaction + 2);
+
+        System.out.println("✅ Commande complétée: " + order.getCocktail().getName() +
+                " | Gain: $" + (int)revenue);
     }
 
+    // ==================== GESTION DES VAGUES ====================
+    public void startWave() {
+        if (isWaveActive) {
+            System.out.println("⚠️ Une vague est déjà active !");
+            return;
+        }
+
+        isWaveActive = true;
+        waveRevenue = 0;
+        orders.clear(); // ← IMPORTANT : Nettoyer les anciennes commandes
+
+        int orderCount = 7 + (3 * wave)%2;
+        generateOrders(orderCount);
+
+        System.out.println("\n🌊 VAGUE #" + wave + " COMMENCÉE!");
+        System.out.println("📊 État: isWaveActive=" + isWaveActive +
+                ", orders.size()=" + orders.size());
+    }
+
+    public void endWave() {
+        if (!isWaveActive) {
+            System.out.println("⚠️ Aucune vague en cours !");
+            return;
+        }
+
+        isWaveActive = false;
+        barmanCurrentOrder.clear();
+        // Payer les salaires
+        double totalSalaries = 0;
+        for (Employee emp : employees) {
+            totalSalaries += emp.getSalary();
+            money -= emp.getSalary();
+        }
+
+        staffSatisfaction = Math.max(0, staffSatisfaction - 5);
+
+        wave++;
+
+        System.out.println("\n✅ VAGUE TERMINÉE!");
+        System.out.println("💰 Revenu: +$" + (int)waveRevenue);
+        System.out.println("💸 Salaires: -$" + (int)totalSalaries);
+        System.out.println("📊 Argent restant: $" + (int)money);
+        System.out.println("🌊 Prochaine vague: #" + wave);
+    }
+
+    // ==================== GESTION DES EMPLOYÉS ====================
     public void hireEmployee(String type) {
-        Employee emp = "barman".equals(type)
-                ? new Barman("Barman-" + (employees.size() + 1))
-                : new Serveur("Serveur-" + (employees.size() + 1));
-        if (money >= emp.getHireCost()) {
-            money -= emp.getHireCost();
-            employees.add(emp);
-            employeeCurrentOrder.put(emp.getId(), -1);
-            OrderLog.getInstance().addLog("✅ " + emp.getName() + " embauché!", "serveur");
+        double hireCost;
+        Employee employee;
+
+        if ("barman".equalsIgnoreCase(type)) {
+            employee = new Barman(BARMAN_NAMES[new Random().nextInt(BARMAN_NAMES.length)]);
+            hireCost = employee.getHireCost();
+        } else if ("serveur".equalsIgnoreCase(type)) {
+            employee = new Serveur(SERVEUR_NAMES[new Random().nextInt(SERVEUR_NAMES.length)]);
+            hireCost = employee.getHireCost();
+        } else {
+            return;
+        }
+
+        if (money >= hireCost) {
+            money -= hireCost;
+            employees.add(employee);
+            staffSatisfaction = Math.min(100, staffSatisfaction + 3);
+            System.out.println("✅ " + employee.getName() + " (" + type + ") recruté ! -$" + (int)hireCost);
+        } else {
+            System.out.println("❌ Fonds insuffisants pour recruter");
         }
     }
 
-    public void buyStock(String ingredientName, int quantity) {
-        for (Ingredient ing : ingredients) {
-            if (ing.getName().equals(ingredientName)) {
-                double cost = ing.getBasePrice() * quantity;
-                if (money >= cost) {
-                    money -= cost;
-                    ing.addStock(quantity);
-                    OrderLog.getInstance().addLog("📦 " + quantity + "x " + ingredientName + " achetés!", "order");
+    public void upgradeEmployee(String empId, String stat) {
+        for (Employee emp : employees) {
+            if (emp.getId().equals(empId)) {
+                double upgradeCost = emp.getUpgradeCost(stat);
+
+                if (money >= upgradeCost) {
+                    money -= upgradeCost;
+                    emp.upgrade(stat);
+                    System.out.println("⬆️ " + emp.getName() + " amélioré en " + stat);
+                } else {
+                    System.out.println("❌ Fonds insuffisants");
                 }
                 return;
             }
         }
     }
 
-    /**
-     * ════════════════════════════════════════════════════════════════════
-     * TRAITEMENT AUTOMATIQUE EN TEMPS RÉEL
-     *
-     * ÉTAPE 1: waiting → assigned (Serveur prend la commande)
-     * ÉTAPE 2: assigned → preparing (Barman reçoit la commande)
-     * ÉTAPE 3: preparing → completed (Barman termine)
-     * ════════════════════════════════════════════════════════════════════
-     */
-    public void processOrdersAutomatically() {
-        List<Order> completedOrders = new ArrayList<>();
-        long currentTime = System.currentTimeMillis();
+    // ==================== GESTION DU STOCK ====================
+    public void buyStock(String ingredientName, int quantity) {
+        for (Ingredient ing : ingredients) {
+            if (ing.getName().equalsIgnoreCase(ingredientName)) {
+                double totalCost = ing.getBasePrice() * quantity;
 
-        // ═══════════════════════════════════════════════════════════════
-        // ÉTAPE 1 : Serveurs prennent les commandes en attente
-        // waiting → assigned
-        // ═══════════════════════════════════════════════════════════════
-        List<Order> waitingOrders = new ArrayList<>(orders);
-        waitingOrders.removeIf(o -> !o.getStatus().equals("waiting"));
-
-        for (Order order : waitingOrders) {
-            if (!orderStartTimes.containsKey(order.getId())) {
-                orderStartTimes.put(order.getId(), currentTime);
-                orderAssignedToServeur.put(order.getId(), false);
-                order.setOrderStartTime(currentTime);
-            }
-
-            if (!orderAssignedToServeur.getOrDefault(order.getId(), false)) {
-                Employee serveur = findAvailableServeur();
-                if (serveur != null) {
-                    order.assignServeur(serveur);
-                    orderAssignedToServeur.put(order.getId(), true);
-                    employeeCurrentOrder.put(serveur.getId(), order.getId());
-                    OrderLog.getInstance().addLog("📝 " + serveur.getName() + " prend: " +
-                            order.getCocktail().getName(), "order");
+                if (money >= totalCost) {
+                    money -= totalCost;
+                    ing.addStock(quantity);
+                    System.out.println("📦 +" + quantity + " " + ingredientName + " ! -$" + (int)totalCost);
+                } else {
+                    System.out.println("❌ Fonds insuffisants");
                 }
-            }
-
-            if (order.getAssignedServeur() != null && orderAssignedToServeur.getOrDefault(order.getId(), false)) {
-                long timeElapsed = currentTime - orderStartTimes.get(order.getId());
-                double serveurSpeed = order.getAssignedServeur().getSpeed();
-                long serveurDuration = (long) (1000.0 / serveurSpeed);
-
-                if (timeElapsed >= serveurDuration) {
-                    order.setStatus("assigned");
-                    orderStartTimes.put(order.getId(), currentTime);
-                    employeeCurrentOrder.put(order.getAssignedServeur().getId(), -1);
-                    order.getAssignedServeur().addExperience(5);
-                    OrderLog.getInstance().addLog("✅ " + order.getAssignedServeur().getName() +
-                            " remet: " + order.getCocktail().getName() + " (+5 XP)", "serveur");
-                }
-            }
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        // ÉTAPE 2 : Barmans reçoivent et préparent les commandes
-        // assigned → preparing
-        // ═══════════════════════════════════════════════════════════════
-        List<Order> assignedOrders = new ArrayList<>(orders);
-        assignedOrders.removeIf(o -> !o.getStatus().equals("assigned"));
-
-        for (Order order : assignedOrders) {
-            if (!orderAssignedToBarman.containsKey(order.getId())) {
-                orderStartTimes.put(order.getId(), currentTime);
-                orderAssignedToBarman.put(order.getId(), false);
-            }
-
-            if (!orderAssignedToBarman.getOrDefault(order.getId(), false)) {
-                Employee barman = findAvailableBarman();
-                if (barman != null) {
-                    order.assignBarman(barman);
-                    orderAssignedToBarman.put(order.getId(), true);
-                    employeeCurrentOrder.put(barman.getId(), order.getId());
-                    order.setStatus("preparing");
-                    orderStartTimes.put(order.getId(), currentTime);
-                    OrderLog.getInstance().addLog("🍸 " + barman.getName() + " prépare: " +
-                            order.getCocktail().getName(), "barman");
-                }
-            }
-
-            if (order.getAssignedBarman() != null && orderAssignedToBarman.getOrDefault(order.getId(), false)) {
-                long timeElapsed = currentTime - orderStartTimes.get(order.getId());
-                double barmanSpeed = order.getAssignedBarman().getSpeed();
-                long barmanDuration = (long) (1000.0 / barmanSpeed);
-
-                if (timeElapsed >= barmanDuration) {
-                    if (canPrepareOrder(order)) {
-                        prepareOrder(order);
-                        order.complete();
-
-                        double earnings = order.getCocktail().getPrice() * 0.8;
-                        money += earnings;
-                        waveRevenue += order.getCocktail().getPrice();
-                        waveOrdersCompleted++;
-
-                        order.getAssignedBarman().addExperience(15);
-                        staffSatisfaction = Math.min(100, staffSatisfaction + 5);
-
-                        employeeCurrentOrder.put(order.getAssignedBarman().getId(), -1);
-                        completedOrders.add(order);
-
-                        OrderLog.getInstance().addLog("🎉 " + order.getCocktail().getName() +
-                                " TERMINÉE! (+$" + String.format("%.0f", earnings) + " | +15 XP)", "completed");
-                    } else {
-                        order.setStatus("waiting");
-                        orderStartTimes.remove(order.getId());
-                        orderAssignedToServeur.remove(order.getId());
-                        orderAssignedToBarman.remove(order.getId());
-                        employeeCurrentOrder.put(order.getAssignedBarman().getId(), -1);
-                        order.assignBarman(null);
-
-                        OrderLog.getInstance().addLog("❌ " + order.getCocktail().getName() +
-                                " : Ingrédients insuffisants!", "error");
-                    }
-                }
-            }
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        // ÉTAPE 3 : Supprimer les commandes complétées de la liste
-        // ═══════════════════════════════════════════════════════════════
-        for (Order order : completedOrders) {
-            orders.remove(order);
-            orderStartTimes.remove(order.getId());
-            orderAssignedToServeur.remove(order.getId());
-            orderAssignedToBarman.remove(order.getId());
-        }
-    }
-
-    private Employee findAvailableServeur() {
-        for (Employee emp : employees) {
-            if ("Serveur".equals(emp.getType())) {
-                if (employeeCurrentOrder.getOrDefault(emp.getId(), -1) == -1) {
-                    return emp;
-                }
-            }
-        }
-        return null;
-    }
-
-    private Employee findAvailableBarman() {
-        for (Employee emp : employees) {
-            if ("Barman".equals(emp.getType())) {
-                if (employeeCurrentOrder.getOrDefault(emp.getId(), -1) == -1) {
-                    return emp;
-                }
-            }
-        }
-        return null;
-    }
-
-    private boolean canPrepareOrder(Order order) {
-        for (String ingredient : order.getCocktail().getRecipe()) {
-            boolean found = false;
-            for (Ingredient ing : ingredients) {
-                if (ing.getName().equals(ingredient) && ing.getStock() > 0) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) return false;
-        }
-        return true;
-    }
-
-    private void prepareOrder(Order order) {
-        for (String ingredientName : order.getCocktail().getRecipe()) {
-            for (Ingredient ing : ingredients) {
-                if (ing.getName().equals(ingredientName)) {
-                    ing.removeStock(1);
-                    break;
-                }
+                return;
             }
         }
     }
 
-    public void endWave() {
-        OrderLog.getInstance().addLog("🏁 VAGUE #" + wave + " TERMINÉE! " + waveOrdersCompleted +
-                " commandes | $" + (int) waveRevenue, "completed");
-
-        wave++;
-        difficultyMultiplier += 0.1;
-        double totalSalaries = 0;
-        for (Employee emp : employees) {
-            totalSalaries += emp.getSalary();
-        }
-
-        money -= totalSalaries;
-        if (money < 0) {
-            money = 0;
-            staffSatisfaction -= 20;
-        }
-
-        waveRevenue = 0;
-        waveOrdersCompleted = 0;
-        orderStartTimes.clear();
-        orderAssignedToServeur.clear();
-        orderAssignedToBarman.clear();
-
-        for (String empId : employeeCurrentOrder.keySet()) {
-            employeeCurrentOrder.put(empId, -1);
-        }
-
-        generateInitialOrders();
-    }
-
-    public void upgradeEmployee(String empId, String stat) {
-        for (Employee emp : employees) {
-            if (emp.getId().equals(empId)) {
-                double cost = emp.getUpgradeCost(stat);
-                if (money >= cost) {
-                    money -= cost;
-                    emp.upgrade(stat);
-                    OrderLog.getInstance().addLog("⬆️ " + emp.getName() + " amélioré!", "serveur");
-                }
-                break;
-            }
-        }
-    }
-
+    // ==================== GETTERS ====================
     public double getMoney() { return money; }
-    public double getStaffSatisfaction() { return staffSatisfaction; }
     public int getWave() { return wave; }
+    public double getStaffSatisfaction() { return staffSatisfaction; }
     public double getWaveRevenue() { return waveRevenue; }
-    public int getWaveOrdersCompleted() { return waveOrdersCompleted; }
-    public List<Employee> getEmployees() { return employees; }
-    public List<Ingredient> getIngredients() { return ingredients; }
-    public List<Order> getOrders() { return orders; }
-    public List<Cocktail> getCocktails() { return cocktails; }
+    public List<Employee> getEmployees() { return new ArrayList<>(employees); }
+    public List<Ingredient> getIngredients() { return new ArrayList<>(ingredients); }
+    public List<Cocktail> getCocktails() { return new ArrayList<>(cocktails); }
+    public List<Order> getOrders() { return new ArrayList<>(orders); }
+    public boolean isWaveActive() { return isWaveActive; }
 }

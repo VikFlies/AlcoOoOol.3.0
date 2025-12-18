@@ -5,11 +5,20 @@ import javafx.application.Platform;
 import fr.bar.cocktails.game.Game;
 import fr.bar.cocktails.view.GameUI;
 
+/**
+ * Moteur de jeu - Gère la boucle de jeu et le traitement des commandes
+ * ⚠️ PROBLÈME IDENTIFIÉ : processOrdersAutomatically() n'est pas appelée
+ */
 public class GameEngine {
+
     private final Game game;
     private final GameUI gameUI;
     private AnimationTimer gameLoop;
     private boolean isWaveActive = false;
+
+    // ← NOUVEAU : Variables de timing
+    private long lastUpdateTime = 0;
+    private static final long UPDATE_INTERVAL_NANOS = 100_000_000; // 100ms en nanosecondes
 
     public GameEngine(Game game) {
         this.game = game;
@@ -22,53 +31,84 @@ public class GameEngine {
     }
 
     /**
-     * Initialise la boucle de jeu qui traite les commandes en temps réel
+     * ⚠️ CORRIGÉ : Initialise la boucle de jeu qui traite les commandes
+     * Cette boucle s'exécute 60 fois par seconde (60 FPS)
+     * Toutes les 100ms, elle traite les commandes si une vague est active
      */
     private void initializeGameLoop() {
         gameLoop = new AnimationTimer() {
-            private long lastProcessTime = 0;
-            private static final long PROCESS_INTERVAL = 100; // Vérifier tous les 100ms
-
             @Override
             public void handle(long now) {
+                // Vérifier si une vague est en cours
                 if (isWaveActive) {
-                    // Traiter les commandes chaque 100ms
-                    if (now - lastProcessTime >= PROCESS_INTERVAL * 1_000_000) {
+                    // Traiter toutes les 100ms (pas à chaque frame)
+                    if (now - lastUpdateTime >= UPDATE_INTERVAL_NANOS) {
+
+                        // ← CRITIQUE : Traiter les commandes
                         game.processOrdersAutomatically();
+
+                        // ← Mettre à jour l'interface
                         updateUI();
-                        lastProcessTime = now;
+
+                        lastUpdateTime = now;
+
+                        // DEBUG
+                        System.out.println("⏱️ TICK: " + game.getOrders().size() +
+                                " commandes | En attente: " +
+                                game.getOrders().stream()
+                                        .filter(o -> "waiting".equals(o.getStatus()))
+                                        .count() +
+                                " | Argent: $" + (int)game.getMoney());
                     }
                 }
             }
         };
         gameLoop.start();
+        System.out.println("✅ GameLoop démarrée");
     }
 
     /**
-     * Démarre une vague (les commandes se traitent automatiquement)
+     * Démarre une vague
      */
     public void startWave() {
-        if (!isWaveActive) {
-            isWaveActive = true;
-            System.out.println("\n🌊 VAGUE #" + game.getWave() + " COMMENCÉE!");
-            updateUI();
+        if (isWaveActive) {
+            System.out.println("⚠️ Une vague est déjà en cours !");
+            return;
         }
+
+        isWaveActive = true;
+        lastUpdateTime = System.nanoTime(); // Reset le timer
+
+        // ← IMPORTANT : Générer les commandes
+        game.startWave();
+
+        System.out.println("\n🌊 VAGUE #" + game.getWave() + " COMMENCÉE!");
+        System.out.println("📊 Commandes à traiter: " + game.getOrders().size());
+
+        updateUI();
     }
 
     /**
      * Termine la vague actuelle
      */
     public void endWave() {
-        if (isWaveActive) {
-            isWaveActive = false;
-            game.endWave();
-            System.out.println("\n✅ Vague terminée!");
-            updateUI();
+        if (!isWaveActive) {
+            System.out.println("⚠️ Aucune vague en cours !");
+            return;
         }
+
+        isWaveActive = false;
+        game.endWave();
+
+        System.out.println("\n✅ Vague terminée!");
+        System.out.println("💰 Revenu: $" + (int)game.getWaveRevenue());
+        System.out.println("💸 Salaires payés");
+
+        updateUI();
     }
 
     /**
-     * Recrute un employé (barman ou serveur)
+     * Recrute un employé
      */
     public void hireEmployee(String type) {
         game.hireEmployee(type);
@@ -76,7 +116,7 @@ public class GameEngine {
     }
 
     /**
-     * Achète du stock d'ingrédient
+     * Achète du stock
      */
     public void buyStock(String ingredient, int quantity) {
         game.buyStock(ingredient, quantity);
@@ -92,10 +132,18 @@ public class GameEngine {
     }
 
     /**
-     * Met à jour l'interface utilisateur
+     * ← CRITIQUE : Met à jour l'interface
+     * Doit être appelée depuis le thread JavaFX
      */
     public void updateUI() {
-        Platform.runLater(() -> gameUI.updateUI());
+        Platform.runLater(() -> {
+            try {
+                gameUI.updateUI();
+            } catch (Exception e) {
+                System.err.println("❌ Erreur dans updateUI: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
     }
 
     public Game getGame() {

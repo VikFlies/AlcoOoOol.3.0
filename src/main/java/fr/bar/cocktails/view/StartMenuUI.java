@@ -14,13 +14,13 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.util.Duration;
-
 import java.util.Random;
 
 public class StartMenuUI extends BorderPane {
 
     private Runnable onNewGameCallback;
     private Runnable onLoadGameCallback;
+    private Runnable onRulesCallback;
     private Pane backgroundPane;
     private Random random = new Random();
     private Timeline emojiLauncherTimeline;
@@ -32,25 +32,21 @@ public class StartMenuUI extends BorderPane {
     private void initializeUI() {
         setStyle("-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #1a1a2e 0%, #16213E 50%, #0f3460 100%);");
 
-        // Créer le pane d'arrière-plan pour les animations
         backgroundPane = new Pane();
         backgroundPane.setStyle("-fx-background-color: transparent;");
         backgroundPane.setPrefSize(1000, 700);
 
-        // Créer le centre avec le titre et les boutons superposés
         VBox centerBox = createCenterBox();
         StackPane stackPane = new StackPane(backgroundPane, centerBox);
         stackPane.setStyle("-fx-background-color: transparent;");
-
         setCenter(stackPane);
+
         setBottom(createBottomBox());
 
-        // Démarrer l'animation des emojis
         startEmojiAnimation();
     }
 
     private void startEmojiAnimation() {
-        // Lancer régulièrement des emojis toutes les 800ms
         emojiLauncherTimeline = new Timeline(
                 new KeyFrame(Duration.millis(400), e -> launchEmoji())
         );
@@ -61,25 +57,20 @@ public class StartMenuUI extends BorderPane {
     private void launchEmoji() {
         String[] emojis = {"🍹", "🍸"};
         String emoji = emojis[random.nextInt(emojis.length)];
-
         Label emojiLabel = new Label(emoji);
         emojiLabel.setFont(Font.font("Arial", 40));
         emojiLabel.setStyle("-fx-text-fill: #FF4ACF; -fx-opacity: 0.8;");
 
-        // Position initiale aléatoire en bas
         double startX = random.nextDouble() * 1000 - 50;
-        double startY = 900; // Hauteur du pane
-
+        double startY = 900;
         emojiLabel.setLayoutX(startX);
         emojiLabel.setLayoutY(startY);
-
         backgroundPane.getChildren().add(emojiLabel);
 
-        // Paramètres de la trajectoire
-        double velocityX = (random.nextDouble() - 0.5) * 400; // Vitesse horizontale aléatoire
-        double velocityY = -(random.nextDouble() * 300 + 350); // Vitesse verticale vers le haut
-        double gravity = 300; // Accélération de la gravité
-        double duration = 3.0; // Durée totale en secondes
+        double velocityX = (random.nextDouble() - 0.5) * 400;
+        double velocityY = -(random.nextDouble() * 300 + 350);
+        double gravity = 300;
+        double duration = 3.0;
 
         animateEmojiWithPhysics(emojiLabel, startX, startY, velocityX, velocityY, gravity, duration);
     }
@@ -89,21 +80,15 @@ public class StartMenuUI extends BorderPane {
                                          double gravity, double duration) {
         Timeline timeline = new Timeline();
 
-        // Nombre d'images par seconde
         int fps = 60;
         int frameCount = (int)(duration * fps);
-
         for (int frame = 0; frame <= frameCount; frame++) {
             double time = (double) frame / fps;
 
-            // Équations de mouvement avec gravité
             double x = startX + velocityX * time;
             double y = startY + velocityY * time + 0.5 * gravity * time * time;
 
-            // Opacité diminue avec le temps
             double opacity = 1.0 - (time / duration);
-
-            // Rotation basée sur la vélocité
             double rotation = (velocityX / 2) * time;
 
             KeyFrame keyFrame = new KeyFrame(
@@ -115,10 +100,10 @@ public class StartMenuUI extends BorderPane {
                         emoji.setRotate(rotation);
                     }
             );
+
             timeline.getKeyFrames().add(keyFrame);
         }
 
-        // Supprimer l'emoji après animation
         timeline.setOnFinished(e -> {
             if (backgroundPane.getChildren().contains(emoji)) {
                 backgroundPane.getChildren().remove(emoji);
@@ -138,7 +123,7 @@ public class StartMenuUI extends BorderPane {
         logoLabel.setStyle("-fx-text-fill: #FF4ACF;" +
                 "-fx-opacity: 0.8;" +
                 "-fx-font-weight: bold;" +
-                        "-fx-effect: dropshadow(gaussian, #FF4ACF, 10, 0.4, 0, 0);"
+                "-fx-effect: dropshadow(gaussian, #FF4ACF, 10, 0.4, 0, 0);"
         );
 
         Label titleLabel = new Label("BAR À COCKTAILS");
@@ -163,6 +148,7 @@ public class StartMenuUI extends BorderPane {
         );
 
         centerBox.getChildren().addAll(logoLabel, titleLabel, subtitleLabel, versionLabel, new Separator());
+
         return centerBox;
     }
 
@@ -206,6 +192,23 @@ public class StartMenuUI extends BorderPane {
             if (onLoadGameCallback != null) onLoadGameCallback.run();
         });
 
+        Button rulesButton = new Button("📋 RÈGLES");
+        rulesButton.setStyle(
+                "-fx-font-size: 16;" +
+                        "-fx-padding: 15 50;" +
+                        "-fx-background-color: #FF4ACF;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-border-radius: 50;" +
+                        "-fx-background-radius: 50;" +
+                        "-fx-cursor: hand;"
+        );
+        rulesButton.setMinWidth(300);
+        rulesButton.setOnAction(e -> {
+            animateButtonClick(rulesButton);
+            if (onRulesCallback != null) onRulesCallback.run();
+        });
+
         Button exitButton = new Button("❌ QUITTER");
         exitButton.setStyle(
                 "-fx-font-size: 14;" +
@@ -218,7 +221,8 @@ public class StartMenuUI extends BorderPane {
         );
         exitButton.setOnAction(e -> System.exit(0));
 
-        bottomBox.getChildren().addAll(newGameButton, loadGameButton, new Separator(), exitButton);
+        bottomBox.getChildren().addAll(newGameButton, loadGameButton, rulesButton, new Separator(), exitButton);
+
         return bottomBox;
     }
 
@@ -239,7 +243,10 @@ public class StartMenuUI extends BorderPane {
         this.onLoadGameCallback = callback;
     }
 
-    // Méthode pour arrêter les animations (utile si tu quittes le menu)
+    public void setOnRulesCallback(Runnable callback) {
+        this.onRulesCallback = callback;
+    }
+
     public void stopAnimations() {
         if (emojiLauncherTimeline != null) {
             emojiLauncherTimeline.stop();

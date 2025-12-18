@@ -6,10 +6,10 @@ package fr.bar.cocktails.game;
 public class Barman extends Employee {
 
     public Barman(String name) {
-        super(name, 150); // Salaire de 150$ par vague
+        super(name, 30); // Salaire de 150$ par vague
         this.speed = 1.5;
         this.quality = 0.7;
-        this.hireCost = 200;
+        this.hireCost = 100;
     }
 
     @Override

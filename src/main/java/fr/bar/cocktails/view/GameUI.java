@@ -322,7 +322,10 @@ public class GameUI {
         sep.setStyle("-fx-border-color: #3d5a7a;");
         content.getChildren().add(sep);
 
-        Button barmanBtn = new Button("🍸 BARMAN ($200)");
+        Serveur tempServeur = new Serveur("temp");
+        Barman tempBarman = new Barman("temp");
+
+        Button barmanBtn = new Button("Recruter Barman - $" + (int)tempBarman.getHireCost());
         barmanBtn.setStyle("-fx-padding: 15; -fx-font-size: 13; -fx-background-color: #2d5f7d; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: hand;");
         barmanBtn.setMaxWidth(Double.MAX_VALUE);
         Label barmanDesc = new Label("Prépare rapidement les cocktails | Vitesse: 1.5x");
@@ -335,7 +338,7 @@ public class GameUI {
         VBox barmanBox = new VBox(barmanBtn, barmanDesc);
         barmanBox.setSpacing(5);
 
-        Button serveurBtn = new Button("🧑‍💼 SERVEUR ($150)");
+        Button serveurBtn = new Button("Recruter Serveur - $" + (int)tempServeur.getHireCost());
         serveurBtn.setStyle("-fx-padding: 15; -fx-font-size: 13; -fx-background-color: #52b788; -fx-text-fill: #1a1f26; -fx-font-weight: bold; -fx-border-radius: 6; -fx-cursor: hand;");
         serveurBtn.setMaxWidth(Double.MAX_VALUE);
         Label serveurDesc = new Label("Gère les clients et les commandes | Vitesse: 1.2x");

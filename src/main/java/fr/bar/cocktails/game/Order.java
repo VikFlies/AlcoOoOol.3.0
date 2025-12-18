@@ -34,6 +34,10 @@ public class Order {
         return status;
     }
 
+    public void resetOrderTime() {
+        this.orderStartTime = System.currentTimeMillis();
+    }
+
     public void setStatus(String status) {
         this.status = status;
         if ("assigned".equals(status)) {

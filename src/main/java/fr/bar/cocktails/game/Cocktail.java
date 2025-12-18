@@ -1,20 +1,59 @@
 package fr.bar.cocktails.game;
 
 /**
- * Classe représentant un cocktail
+ * Classe abstraite représentant un cocktail
+ * Parent de AlcoholicCocktail et SoftCocktail
  */
-public class Cocktail {
-    private String name;
-    private double price;
-    private String[] recipe;
+public abstract class Cocktail {
+    protected String name;
+    protected double price;
+    protected String[] recipe;
+    protected double preparationTime;
 
-    public Cocktail(String name, double price, String[] recipe) {
+    /**
+     * Constructeur parent
+     */
+    protected Cocktail(String name, String[] recipe, double price, double preparationTime) {
         this.name = name;
         this.price = price;
         this.recipe = recipe;
+        this.preparationTime = preparationTime;
     }
 
-    public String getName() { return name; }
-    public double getPrice() { return price; }
-    public String[] getRecipe() { return recipe; }
+    /**
+     * Méthode abstraite pour obtenir le type de cocktail
+     */
+    public abstract String getType();
+
+    /**
+     * Méthode abstraite pour obtenir la description
+     */
+    public abstract String getDescription();
+
+    /**
+     * Méthode abstraite pour obtenir un bonus/malus selon le type
+     */
+    public abstract double getQualityModifier();
+
+    // ==================== GETTERS ====================
+    public String getName() {
+        return name;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public String[] getRecipe() {
+        return recipe;
+    }
+
+    public double getPreparationTime() {
+        return preparationTime;
+    }
+
+    @Override
+    public String toString() {
+        return name + " (" + getType() + ") - $" + price;
+    }
 }

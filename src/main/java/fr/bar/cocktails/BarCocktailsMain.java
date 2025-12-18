@@ -1,89 +1,92 @@
 package fr.bar.cocktails;
 
-import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.util.Duration;
+import fr.bar.cocktails.view.StartMenuUI;
+import fr.bar.cocktails.view.RulesMenu;
+import fr.bar.cocktails.view.GameUI;
 import fr.bar.cocktails.game.Game;
 import fr.bar.cocktails.engine.GameEngine;
-import fr.bar.cocktails.view.StartMenuUI;
-import fr.bar.cocktails.view.GameUI;   // ← ancienne interface classique
 
 public class BarCocktailsMain extends Application {
 
     private Stage primaryStage;
-    private Scene menuScene;
-    private Scene gameScene;
-
+    private StartMenuUI startMenuUI;
+    private RulesMenu rulesMenu;
+    private GameUI gameUI;
     private Game game;
     private GameEngine engine;
-    private GameUI gameUI;            // ← ton ancienne UI
 
     @Override
-    public void start(Stage primaryStage) {
-        this.primaryStage = primaryStage;
+    public void start(Stage stage) {
+        this.primaryStage = stage;
         primaryStage.setTitle("🍹 Bar à Cocktails");
         primaryStage.setWidth(1400);
-        primaryStage.setHeight(850);
+        primaryStage.setHeight(900);
+        primaryStage.centerOnScreen();
 
         showStartMenu();
-
         primaryStage.show();
     }
 
-    /**
-     * Affiche le premier écran : menu de démarrage
-     */
     private void showStartMenu() {
-        StartMenuUI startMenu = new StartMenuUI();
+        startMenuUI = new StartMenuUI();
 
-        // Quand on clique sur "Nouvelle partie"
-        startMenu.setOnNewGameCallback(() -> {
-            startNewGame();
-            transitionToGame();
+        startMenuUI.setOnNewGameCallback(() -> {
+            showGameScreen();
         });
 
-        // Bouton "Charger" (optionnel, pas encore implémenté)
-        startMenu.setOnLoadGameCallback(() -> {
-            System.out.println("Chargement de partie : non implémenté pour l'instant.");
+        startMenuUI.setOnLoadGameCallback(() -> {
+            // TODO: Implémenter le chargement de partie
         });
 
-        menuScene = new Scene(startMenu, 1400, 850);
-        primaryStage.setScene(menuScene);
+        startMenuUI.setOnRulesCallback(() -> {
+            showRulesMenu();
+        });
+
+        Scene scene = new Scene(startMenuUI, 1400, 900);
+        primaryStage.setScene(scene);
     }
 
-    /**
-     * Crée la partie avec l'ancienne interface GameUI
-     */
-    private void startNewGame() {
+    private void showRulesMenu() {
+        rulesMenu = new RulesMenu();
+
+        rulesMenu.setOnBackCallback(() -> {
+            showStartMenu();
+        });
+
+        Scene scene = new Scene(rulesMenu, 1400, 900);
+        primaryStage.setScene(scene);
+    }
+
+    private void showGameScreen() {
         game = new Game();
         engine = new GameEngine(game);
-
-        // ⚠️ On utilise ici TON ancienne GameUI
         gameUI = new GameUI(game, engine);
 
-        gameScene = new Scene(gameUI.getRoot(), 1400, 850);
+        startGameUpdateLoop();
+
+        Scene scene = new Scene(gameUI.getRoot(), 1400, 900);
+        primaryStage.setScene(scene);
     }
 
-    /**
-     * Transition visuelle du menu vers le jeu
-     */
-    private void transitionToGame() {
-        FadeTransition fadeOut =
-                new FadeTransition(Duration.millis(400), primaryStage.getScene().getRoot());
-        fadeOut.setFromValue(1.0);
-        fadeOut.setToValue(0.0);
-        fadeOut.setOnFinished(e -> {
-            primaryStage.setScene(gameScene);
-
-            FadeTransition fadeIn =
-                    new FadeTransition(Duration.millis(400), gameScene.getRoot());
-            fadeIn.setFromValue(0.0);
-            fadeIn.setToValue(1.0);
-            fadeIn.play();
+    private void startGameUpdateLoop() {
+        Thread gameThread = new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(16);
+                    javafx.application.Platform.runLater(() -> {
+                        engine.updateUI();
+                        gameUI.updateUI();
+                    });
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         });
-        fadeOut.play();
+        gameThread.setDaemon(true);
+        gameThread.start();
     }
 
     public static void main(String[] args) {

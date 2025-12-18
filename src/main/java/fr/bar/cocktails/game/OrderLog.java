@@ -19,7 +19,7 @@ public class OrderLog {
 
     public static class LogEntry {
         public String message;
-        public String type; // "order", "serveur", "barman", "completed", "error"
+        public String type;
         public long timestamp;
 
         public LogEntry(String message, String type) {
@@ -36,9 +36,9 @@ public class OrderLog {
     }
 
     public void addLog(String message, String type) {
-        logs.add(0, new LogEntry(message, type)); // Ajouter au début
+        logs.add(0, new LogEntry(message, type));
         if (logs.size() > MAX_LOGS) {
-            logs.remove(logs.size() - 1); // Supprimer le plus ancien
+            logs.remove(logs.size() - 1);
         }
     }
 
