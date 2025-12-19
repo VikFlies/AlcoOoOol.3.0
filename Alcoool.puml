@@ -1,0 +1,362 @@
+@startuml
+abstract class fr.bar.cocktails.game.Cocktail {
+# String name
+# double price
+# String[] recipe
+# double preparationTime
+# <<Create>> Cocktail(String,String[],double,double)
++ {abstract}String getType()
++ {abstract}String getDescription()
++ {abstract}double getQualityModifier()
++ String getName()
++ double getPrice()
++ String[] getRecipe()
++ double getPreparationTime()
++ String toString()
++ String getPriceDescription()
++ double calculateFinalPrice()
+}
+
+
+class fr.bar.cocktails.game.Barman {
++ <<Create>> Barman(String)
++ void upgrade(String)
++ double getUpgradeCost(String)
+}
+
+class fr.bar.cocktails.game.Ingredient {
+- String name
+- double basePrice
+- int quantity
++ <<Create>> Ingredient(String,double,int)
++ boolean useIngredient()
++ boolean useIngredients(int)
++ void addStock(int)
++ boolean hasEnoughStock(int)
++ int getQuantity()
++ boolean isLowStock()
++ String getName()
++ double getBasePrice()
++ String toString()
+}
+
+
+class fr.bar.cocktails.game.SoftCocktail {
+- boolean containsCaffeine
++ <<Create>> SoftCocktail(String,String[],double,double,boolean)
++ <<Create>> SoftCocktail(String,String[],double,double)
++ String getType()
++ String getDescription()
++ double getQualityModifier()
++ boolean isContainsCaffeine()
++ String toString()
+}
+
+
+class fr.bar.cocktails.game.Serveur {
++ <<Create>> Serveur(String)
++ void upgrade(String)
++ double getUpgradeCost(String)
+}
+
+class fr.bar.cocktails.game.OrderLog {
+- {static} OrderLog instance
+- List<LogEntry> logs
+- int MAX_LOGS
+- <<Create>> OrderLog()
++ {static} OrderLog getInstance()
++ void addLog(String,String)
++ List<LogEntry> getLogs()
++ void clear()
+}
+
+
+class fr.bar.cocktails.game.OrderLog$LogEntry {
++ String message
++ String type
++ long timestamp
++ <<Create>> LogEntry(String,String)
++ String getFormattedTime()
+}
+
+
+interface fr.bar.cocktails.game.Payable {
+~ double getPrice()
+~ String getPriceDescription()
+~ double calculateFinalPrice()
+}
+
+class fr.bar.cocktails.game.EmployeeUpgrade {
+- String name
+- String stat
+- double cost
+- double improvement
+- Employee employee
++ <<Create>> EmployeeUpgrade(Employee,String,double,double)
++ void apply()
++ double getPrice()
++ String getPriceDescription()
++ double calculateFinalPrice()
++ String getStat()
++ double getImprovement()
++ Employee getEmployee()
++ String getName()
++ String toString()
+}
+
+
+class fr.bar.cocktails.engine.Timer {
+- long duration
+- long startTime
+- boolean running
+- boolean requested
+- long remaining
++ <<Create>> Timer(long)
++ void update(long)
++ void start()
++ boolean isRunning()
++ long getRemaining()
+}
+
+
+abstract class fr.bar.cocktails.game.Employee {
+# String id
+# String name
+# double speed
+# double quality
+# double experience
+# double salary
+# double hireCost
++ <<Create>> Employee(String,String,double)
++ <<Create>> Employee(String,double)
++ {abstract}void upgrade(String)
++ {abstract}double getUpgradeCost(String)
++ void addExperience(double)
++ void setSpeed(double)
++ void setQuality(double)
++ void increaseSalary(double)
++ List<EmployeeUpgrade> getAvailableUpgrades()
++ boolean canBeUpgraded(String)
++ String getId()
++ String getName()
++ String getType()
++ double getSpeed()
++ double getQuality()
++ double getExperience()
++ double getSalary()
++ double getHireCost()
+}
+
+
+class fr.bar.cocktails.view.StartMenuUI {
+- Runnable onNewGameCallback
+- Runnable onLoadGameCallback
+- Runnable onRulesCallback
+- Pane backgroundPane
+- Random random
+- Timeline emojiLauncherTimeline
++ <<Create>> StartMenuUI()
+- void initializeUI()
+- void startEmojiAnimation()
+- void launchEmoji()
+- void animateEmojiWithPhysics(Label,double,double,double,double,double,double)
+- VBox createCenterBox()
+- VBox createBottomBox()
+- void animateButtonClick(Button)
++ void setOnNewGameCallback(Runnable)
++ void setOnLoadGameCallback(Runnable)
++ void setOnRulesCallback(Runnable)
++ void stopAnimations()
+}
+
+
+class fr.bar.cocktails.game.Order {
+- {static} int nextId
+- int id
+- Cocktail cocktail
+- String status
+- Employee assignedServeur
+- Employee assignedBarman
+- double satisfactionLevel
+- long orderStartTime
+- long serveurStartTime
+- long barmanStartTime
++ <<Create>> Order(Cocktail,double)
++ int getId()
++ Cocktail getCocktail()
++ String getStatus()
++ void resetOrderTime()
++ void setStatus(String)
++ Employee getAssignedServeur()
++ void assignServeur(Employee)
++ Employee getAssignedBarman()
++ void assignBarman(Employee)
++ String getServeurName()
++ String getBarmanName()
++ double getSatisfactionLevel()
++ void setOrderStartTime(long)
++ double getWaitTime()
++ double getServeurProgress()
++ double getBarmanProgress()
++ double getServeurTimeRemaining()
++ double getBarmanTimeRemaining()
++ void complete()
++ String toString()
+}
+
+
+class fr.bar.cocktails.BarCocktailsMain {
+- Stage primaryStage
+- StartMenuUI startMenuUI
+- RulesMenu rulesMenu
+- GameUI gameUI
+- Game game
+- GameEngine engine
++ void start(Stage)
+- void showStartMenu()
+- void showRulesMenu()
+- void showGameScreen()
+- void startGameUpdateLoop()
++ {static} void main(String[])
+}
+
+
+class fr.bar.cocktails.view.RulesMenu {
+- Runnable onBackCallback
++ <<Create>> RulesMenu()
+- void initializeUI()
+- HBox createHeader()
+- VBox createMainContent()
+- VBox createRuleSection(String,String,String[],String)
+- HBox createFooter()
+- void animateExit()
++ void setOnBackCallback(Runnable)
+}
+
+
+class fr.bar.cocktails.engine.GameEngine {
+- Game game
+- GameUI gameUI
+- AnimationTimer gameLoop
+- boolean isWaveActive
+- long lastUpdateTime
+- {static} long UPDATE_INTERVAL_NANOS
++ <<Create>> GameEngine(Game)
++ GameUI getGameUI()
+- void initializeGameLoop()
++ void startWave()
++ void endWave()
++ void hireEmployee(String)
++ void buyStock(String,int)
++ void updateUI()
++ Game getGame()
++ boolean isWaveActive()
+}
+
+
+class fr.bar.cocktails.view.GameUI {
+- Game game
+- GameEngine engine
+- VBox root
+- Label moneyLabel
+- Label satisfactionLabel
+- Label waveRevenueLabel
+- Label waveNumberLabel
+- VBox employeesList
+- VBox stockList
+- VBox orderQueue
+- VBox logsPanel
+- Label waitingCount
+- Label preparingCount
+- Label completedCount
+- Button startButton
++ <<Create>> GameUI(Game,GameEngine)
+- void initialize()
+- HBox createHeader()
+- VBox createStatBox(String,Label,String)
+- GridPane createMainGrid()
+- VBox createPanel(String,VBox,Button)
+- VBox createOrdersPanel()
+- VBox createLogsPanel()
+- HBox createStatItem(String,Label,String)
+- HBox createWaveControl()
+- Button createHireButton()
+- Button createStockButton()
+- void showHireDialog()
+- void showStockDialog()
++ void updateUI()
+- void updateEmployeesList()
+- void updateStockList()
+- void updateOrdersList()
+- void updateLogs()
+- void showUpgradeDialog(Employee)
++ VBox getRoot()
+}
+
+
+class fr.bar.cocktails.game.AlcoholicCocktail {
+- double alcoholDegree
++ <<Create>> AlcoholicCocktail(String,String[],double,double,double)
++ <<Create>> AlcoholicCocktail(String,String[],double,double)
++ String getType()
++ String getDescription()
++ double getQualityModifier()
++ double getAlcoholDegree()
++ String toString()
+}
+
+
+class fr.bar.cocktails.game.Game {
+- double money
+- int wave
+- double staffSatisfaction
+- double waveRevenue
+- List<Employee> employees
+- List<Ingredient> ingredients
+- List<Cocktail> cocktails
+- List<Order> orders
+- boolean isWaveActive
+- Map<String,Order> barmanCurrentOrder
+- {static} String[] SERVEUR_NAMES
+- {static} String[] BARMAN_NAMES
++ <<Create>> Game()
+- void initializeIngredients()
+- void initializeCocktails()
++ void generateOrders(int)
++ void upgradeEmployee(String,String)
++ void displayEmployeeUpgrades(String)
++ void processOrdersAutomatically()
+- void completeOrder(Order)
+- void completeFailedOrder(Order)
++ void startWave()
++ void endWave()
++ void hireEmployee(String)
++ void buyStock(String,int)
+- boolean hasEnoughStockForCocktail(Cocktail)
+- Ingredient findIngredient(String)
+- boolean useIngredientsForCocktail(Cocktail)
++ double getMoney()
++ int getWave()
++ double getStaffSatisfaction()
++ double getWaveRevenue()
++ List<Employee> getEmployees()
++ List<Ingredient> getIngredients()
++ List<Cocktail> getCocktails()
++ List<Order> getOrders()
++ boolean isWaveActive()
+}
+
+
+
+
+fr.bar.cocktails.game.Payable <|.. fr.bar.cocktails.game.Cocktail
+fr.bar.cocktails.game.Employee <|-- fr.bar.cocktails.game.Barman
+fr.bar.cocktails.game.Cocktail <|-- fr.bar.cocktails.game.SoftCocktail
+fr.bar.cocktails.game.Employee <|-- fr.bar.cocktails.game.Serveur
+fr.bar.cocktails.game.OrderLog +.. fr.bar.cocktails.game.OrderLog$LogEntry
+fr.bar.cocktails.game.Payable <|.. fr.bar.cocktails.game.EmployeeUpgrade
+javafx.scene.layout.BorderPane <|-- fr.bar.cocktails.view.StartMenuUI
+javafx.application.Application <|-- fr.bar.cocktails.BarCocktailsMain
+javafx.scene.layout.BorderPane <|-- fr.bar.cocktails.view.RulesMenu
+fr.bar.cocktails.game.Cocktail <|-- fr.bar.cocktails.game.AlcoholicCocktail
+@enduml
